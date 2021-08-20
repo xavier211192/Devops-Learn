@@ -1,19 +1,44 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
-
 trigger:
-- main
-
+  branches:
+    include:
+    - feature/*
+    - release/*
+    - develop
+  paths:
+    include:
+    - azuredatafactory
+    
 pool:
-  vmImage: ubuntu-latest
+  vmImage: 'ubuntu-latest'
 
-steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
+variables:
+  workingDir: $(Build.Repository.LocalPath)/azuredatafactory/src
+  serviceConnection: 'AzureServiceConnection' 
 
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+stages:
+  - stage: build
+    jobs:
+      - job:
+      
+        steps:
+          
+          # configuring node
+          - task: NodeTool@0
+            inputs:
+              versionSpec: '10.x'
+            displayName: 'Install Node.js'
+          
+          - task: Npm@1
+            inputs:
+              command: 'install'
+              verbose: true
+              workingDir: '$(workingDir)'
+            displayName: 'Install npm package'
+          
+          # validating artifacts
+          - task: Npm@1
+            inputs:
+              command: 'custom'
+              customCommand: 'run build validate $(workingDir) /subscriptions/337ba254-3aa0-4551-ba8e-89debefaa373/resourceGroups/RG-Datafactory/providers/Microsoft.DataFactory/factories/adf-testdeploywes'
+              workingDir: '$(workingDir)'
+            displayName: 'Validate'
